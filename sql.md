@@ -2,9 +2,10 @@
 
 ## Overview
 
-Forked from https://github.com/treffynnon/sqlstyle.guide by [Simon Holywell][simon] with the following changes:
-* More concise
-* Switched from the river pattern to left-aligned keywords
+Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—with the following changes:
+
+* General editing of language, sections
+* Switched from the river pattern to left-aligned root keywords.
 
 ## General
 
@@ -21,14 +22,6 @@ Forked from https://github.com/treffynnon/sqlstyle.guide by [Simon Holywell][sim
 * Include comments in SQL code where necessary. Use the C style opening `/*` and
   closing `*/` where possible otherwise precede comments with `--` and finish
   them with a new line.
-
-```sql
-/* Here is a block comment */
-SELECT 
-  file_hash -- Here is an inline comment
-FROM
-  files;
-```
 
 ### Avoid
 
@@ -47,8 +40,7 @@ FROM
 
 ### General
 
-* Ensure the name is unique and does not exist as a
-  [reserved keyword][reserved-keywords].
+* Ensure the name is unique and does not exist as a reserved keywords.
 * Keep the length to a maximum of 30 characters.
 * Only use letters, numbers and underscores in names—and begin with a letter and not end with an underscore.
 * Avoid the use of multiple consecutive underscores—these can be hard to read.
@@ -56,13 +48,6 @@ FROM
   name becomes `first_name`).
 * Avoid abbreviations and if you have to use them make sure they are commonly
   understood.
-
-```sql
-SELECT 
-  first_name
-FROM 
-  staff;
-```
 
 ### Tables
 
@@ -90,18 +75,6 @@ FROM
 * For computed data (`SUM()` or `AVG()`) use the name you would give it were it
   a column defined in the schema.
 
-```sql
-SELECT 
-  first_name AS fn,
-  SUM(s1.monitor_tally) AS monitor_total
-FROM 
-  staff AS s1
-JOIN 
-  students AS s2
-ON 
-  s2.mentor_id = s1.staff_num;
-```
-
 ### Uniform suffixes
 
 The following suffixes have a universal meaning ensuring the columns can be read
@@ -124,8 +97,7 @@ and understood easily from SQL code. Use the correct suffix where appropriate.
 
 ### Reserved words
 
-Always use uppercase for the [reserved keywords][reserved-keywords]
-like `SELECT` and `WHERE`.
+Always use uppercase for the reserved keywords like `SELECT` and `WHERE`.
 
 Use of abbreviated keywords is encouraged (`ABS` to `ABSOLUTE`).
 
@@ -138,7 +110,7 @@ To make the code easier to read it is important that the correct complement of
 spacing is used. Do not crowd code or remove natural language spaces.
 
 Root keywords should all start on the same character boundary. This is counter to 
-the common "rivers" pattern described [https://www.sqlstyle.guide/#spaces][here].
+the common "rivers" pattern described [here](https://www.sqlstyle.guide/#spaces).
 
 It's acceptable to include an argument on the same line as the root keyword, if there is exactly one argument.  
 
@@ -154,7 +126,7 @@ WHERE
   sample_id = '42'
   AND submission_date > '20180101'
 LIMIT
-  10;
+  10
 ```
 
 **Bad**
@@ -164,7 +136,7 @@ SELECT client_id,
        submission_date
   FROM main_summary
  WHERE sample_id = '42'
-   AND submission_date > '20180101';
+   AND submission_date > '20180101'
 ```
 
 Although not exhaustive always include spaces:
@@ -184,35 +156,26 @@ Always include newlines/vertical space:
   large chunks of code.
 
 ```sql
-SELECT 
-  a.title, a.release_date, a.recording_date
-FROM 
-  albums AS a
-WHERE 
-  a.title = 'Charcoal Lane'
-  OR a.title = 'The New Danger';
-```
-
-```sql
 UPDATE albums -- single argument on same line as root keyword
 SET 
   release_date = '1990-01-01 01:01:01.00000'
 WHERE 
-  title = 'The New Danger';
+  title = 'The New Danger'
 ```
 
 ```sql
 SELECT 
+  SUM(a.copies) AS copies_total,
   a.title,
   a.release_date, a.recording_date, a.production_date -- grouped dates together
 FROM 
   albums AS a
 WHERE 
   a.title = 'Charcoal Lane'
-  OR a.title = 'The New Danger';
+  OR a.title = 'The New Danger'
 ```
 
-#### Joins
+### Joins
 
 Joins should be indented with left-aligned root keywords.
 
@@ -230,7 +193,7 @@ INNER JOIN
   crew AS c
 ON 
   r.crew_chief_last_name = c.last_name
-  AND c.chief = 'Y';
+  AND c.chief = 'Y'
 ```
 
 ### Parentheses
@@ -368,7 +331,7 @@ CREATE TABLE staff (
     pens_in_drawer INT(2)       NOT NULL,
                    CONSTRAINT pens_in_drawer_range
                    CHECK(pens_in_drawer >= 1 AND pens_in_drawer < 100)
-);
+)
 ```
 
 ### Designs to avoid
