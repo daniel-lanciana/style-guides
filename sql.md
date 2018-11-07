@@ -1,11 +1,13 @@
-# SQL style guide
+# SQL Style Guide
 
 ## Overview
 
-Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—with the following changes:
+Defines the set of standards pertaining to relational database design and
+interaction by engineers or data scientists.
 
-* General editing of language, sections
-* Switched from the river pattern to left-aligned root keywords.
+Forked from https://github.com/treffynnon/sqlstyle.guide with the most significant
+changes being the removal of the river pattern, ORM (Object Relational Mapping) 
+considerations, and the inclusion of UUIDs.
 
 ## General
 
@@ -13,6 +15,7 @@ Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—wit
 
 * Use consistent and descriptive identifiers and names.
 * Make judicious use of white space and indentation to make code easier to read.
+* Use auto-incrementing integers when a surrogate primary key is needed.
 * Store [ISO-8601][iso-8601] compliant time and date information
   (`YYYY-MM-DD HH:MM:SS.SSSSS`).
 * Try to use only standard SQL functions instead of vendor specific functions for
@@ -22,6 +25,10 @@ Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—wit
 * Include comments in SQL code where necessary. Use the C style opening `/*` and
   closing `*/` where possible otherwise precede comments with `--` and finish
   them with a new line.
+* Include a standard `created_at` timestamp field in all tables, `updated_at` for
+  all mutable tables, and `archived_at` for any tables where rows may be archived
+  (as a traceable alternative to deletion, where applicable). This encourages
+  traceability and is a standard with frameworks such as Ruby on Rails.
 
 ### Avoid
 
@@ -34,9 +41,12 @@ Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—wit
   on vendor).
 * Object oriented design principles should not be applied to SQL or database
   structures.
-* Stored procedures—logic should be in the application, not data, layer.
+* Stored procedures—logic (e.g. stored procedures, triggers) should be in the application, 
+  not data, layer. They make it harder to reason about code execution and state changes.
 
 ## Naming conventions
+
+Strive for consistent, idiomatic naming that integrates well with established ORM solutions.
 
 ### General
 
@@ -57,12 +67,15 @@ Forked from https://github.com/treffynnon/sqlstyle.guide by Simon Holywell—wit
   notation.
 * Never give a table the same name as one of its columns and vice versa.
 * Avoid, where possible, concatenating two table names together to create the name
-  of a relationship table. Rather than `cars_mechanics` prefer `services`.
+  of a relationship table. Rather than `car_mechanics` prefer `services`. When 
+  unavoidable use the Ruby on Rails convention of only using a plural for the last
+  word (`car_mechanics` instead of `cars_mechanics`).
 
 ### Columns
 
 * Always use the singular name.
-* Where possible avoid simply using `id` as the primary identifier for the table.
+* Surrogate primary key fields should be named `id`.  
+* Foreign key fields should be `singularized_table_name_id` (such as `item_id`).  
 * Do not add a column with the same name as its table and vice versa.
 
 ### Aliasing or correlations
@@ -93,6 +106,121 @@ and understood easily from SQL code. Use the correct suffix where appropriate.
 * `_addr`—an address for the record could be physical or intangible such as
   `ip_addr`.
 
+## Schema design
+
+### Data types
+
+* Where possible do not use vendor specific data types—these are not portable and
+  may not be available in older versions of the same vendor's software.
+* Use optimaly-sized data types and lengths—it reduces size and increases performance
+  as the database grows. Be aware of the range of values each type can accomodate
+  (e.g. unsigned numbers, decimal place precision).
+* Only use `REAL` or `FLOAT` types where it is strictly necessary for floating
+  point mathematics otherwise prefer `NUMERIC` and `DECIMAL` at all times. Floating
+  point rounding errors are a nuisance!
+
+### Default values
+
+* The default value must be the same type as the column—if a column is declared
+  a `DECIMAL` do not provide an `INTEGER` default value.
+* Default values must follow the data type declaration and come before any
+  `NOT NULL` statement.
+
+### UUIDs (Universally Unique Identifiers)
+
+128-bit random (using UUIDv4) private keys should only be used with the following
+requirements outweigh the performance (more disk space, memory, slower sorting), 
+portability (uuid data type) and usability tradeoffs (lack of inbuilt way to generate
+UUIDs in database, harder to remember and verbalize for ad-hoc operations):
+
+* hide underlying infromation about the system (e.g. the total number of users) and
+  prevent attack vectors (e.g. scraping, brute force) *AND* a unique, public, human-friendly
+  alternative does not exist—such as a username or slug
+* to save round-trip calls to the database to obtain the primary key in order to perform
+  an intended action
+* a requirement for unique IDs across databases so they can be merged without key 
+  collisions.
+
+UUIDs also have no natural order, so can't be used in clustered databases without using a 
+sequential UUID (e.g. with `newsequentialid()`) at the cost reduced randomness.
+
+### Primary keys
+
+Tables must have at least one key to be complete and useful—as it will effect performance 
+and data integrity. A primary key (or combined composite key) needs to be:
+
+* unique
+* immutable (will never change)
+* an integer (or a data type that can be validated against a standard ISO format).
+
+Using an auto-incrementing integer is good practice for tables that do not have a
+naturally-ocurring primary key.
+
+### Constraints
+
+Constraints help ensure data integrity and define relationships between tables. 
+
+Use of `FOREIGN KEY` should always be used when referencing values from another table. Use 
+of `UNIQUE` should always be used when one-or-more fields are not permitted to be
+duplicated within the confines of a table. 
+
+### Indexes
+
+Should be used on frequently queried, non-key fields of data types that lend themselves
+to efficient sorting (numericals, short strings) and have a high read-to-write ratio
+(to offset the space and reindexing overhead).
+
+### Validation
+
+It's acceptable to perform data validation only at the application layer, but for
+complete integrity the same rules can be applied at the data layer also. Be
+aware that any changes to validation will require code and schema changes.
+
+* Use `LIKE` and `SIMILAR TO` constraints to ensure the integrity of strings
+  where the format is known.
+* Where the ultimate range of a numerical value is known it must be written as a
+  range `CHECK()` to prevent incorrect values entering the database or the silent
+  truncation of data too large to fit the column definition. In the least it
+  should check that the value is greater than zero in most cases.
+* `CHECK()` constraints should be kept in separate clauses to ease debugging.
+
+### Create syntax
+
+* Specify the primary key first right after the `CREATE TABLE` statement.
+* Constraints should be defined directly beneath the column they correspond to.
+  Indent the constraint so that it aligns to the right of the column name.
+* If it is a multi-column constraint then consider putting it as close to both
+  column definitions as possible and where this is difficult as a last resort
+  include them at the end of the `CREATE TABLE` definition.
+* If it is a table level constraint that applies to the entire table then it
+  should also appear at the end.
+* Use alphabetical order where `ON DELETE` comes before `ON UPDATE`.
+* If it make senses to do so align each aspect of the query on the same character
+  position. For example all `NOT NULL` definitions could start at the same
+  character position. This is not hard and fast, but it certainly makes the code
+  much easier to scan and read.
+
+```sql
+CREATE TABLE staff (
+    PRIMARY KEY (staff_num),
+    staff_num      INT(5)       NOT NULL,
+    first_name     VARCHAR(100) NOT NULL,
+    pens_in_drawer INT(2)       NOT NULL,
+                   CONSTRAINT pens_in_drawer_range
+                   CHECK(pens_in_drawer >= 1 AND pens_in_drawer < 100)
+)
+```
+
+### Designs to avoid
+
+* Splitting up data that should be in one table across many because of arbitrary
+  concerns such as time-based archiving or location in a multi-national
+  organisation. Later queries must then work across multiple tables with `UNION`
+  rather than just simply querying one table.
+* Repeating values across multiple tables uses more space and leads to data
+  integrity issues and more effort to refactor (e.g. renaming). Instead refactor values 
+  into a common table referenced via a foreign key relationship.  
+
 ## Query syntax
 
 ### Reserved words
@@ -110,7 +238,8 @@ To make the code easier to read it is important that the correct complement of
 spacing is used. Do not crowd code or remove natural language spaces.
 
 Root keywords should all start on the same character boundary. This is counter to 
-the common "rivers" pattern described [here](https://www.sqlstyle.guide/#spaces).
+the common "rivers" pattern described [here](https://www.sqlstyle.guide/#spaces). Less
+annoying to write and easy to comment out specific lines for debugging.
 
 It's acceptable to include an argument on the same line as the root keyword, if there is exactly one argument.  
 
@@ -137,6 +266,7 @@ SELECT client_id,
   FROM main_summary
  WHERE sample_id = '42'
    AND submission_date > '20180101'
+ LIMIT 10
 ```
 
 Although not exhaustive always include spaces:
@@ -204,7 +334,7 @@ If parentheses span multiple lines:
 * the closing parenthesis should be lined up under the first character of the line that starts the multi-line construct
 * the contents of the parentheses should be indented one level.
 
-Do not use nested queries. Instead, use Common Table Expressions (`WITH`) to improve readability.
+Do not use nested queries. Instead, use Common Table Expressions (the `WITH` keyword) to improve readability.
 
 ```sql
 WITH sample AS (
@@ -229,11 +359,12 @@ WITH sample AS (
   likely should be.
 
 ```sql
-SELECT CASE postcode
-  WHEN 'BN1' 
-    THEN 'Brighton'
-  WHEN 'EH1' 
-    THEN 'Edinburgh'
+SELECT 
+  CASE postcode
+    WHEN 'BN1' 
+      THEN 'Brighton'
+    WHEN 'EH1' 
+      THEN 'Edinburgh'
   END AS city
 FROM 
   office_locations
@@ -243,115 +374,13 @@ WHERE
   AND postcode IN ('EH1', 'BN1', 'NN1', 'KW1')
 ```
 
-## Create syntax
+## Integration with the logic layer
 
-### Choosing data types
+* Avoid writing SQL, use an ORM (faster development, database agnostic, easier 
+  to maintain)
+* Use migration scripts for schema and seed data changes (versioned, committed 
+  to repository, rollbacks)
 
-* Where possible do not use vendor specific data types—these are not portable and
-  may not be available in older versions of the same vendor's software.
-* Only use `REAL` or `FLOAT` types where it is strictly necessary for floating
-  point mathematics otherwise prefer `NUMERIC` and `DECIMAL` at all times. Floating
-  point rounding errors are a nuisance!
+## References
 
-### Specifying default values
-
-* The default value must be the same type as the column—if a column is declared
-  a `DECIMAL` do not provide an `INTEGER` default value.
-* Default values must follow the data type declaration and come before any
-  `NOT NULL` statement.
-
-### Constraints and keys
-
-Constraints and their subset, keys, are a very important component of any
-database definition. They can quickly become very difficult to read and reason
-about though so it is important that a standard set of guidelines are followed.
-
-#### Choosing keys
-
-Deciding the column(s) that will form the keys in the definition should be a
-carefully considered activity as it will effect performance and data integrity.
-
-1. The key should be unique to some degree.
-2. Consistency in terms of data type for the value across the schema and a lower
-   likelihood of this changing in the future.
-3. Can the value be validated against a standard format (such as one published by
-   ISO)? Encouraging conformity to point 2.
-4. Keeping the key as simple as possible whilst not being scared to use compound
-   keys where necessary.
-
-It is a reasoned and considered balancing act to be performed at the definition
-of a database. Should requirements evolve in the future it is possible to make
-changes to the definitions to keep them up to date.
-
-#### Defining constraints
-
-Once the keys are decided it is possible to define them in the system using
-constraints along with field value validation.
-
-##### General
-
-* Tables must have at least one key to be complete and useful.
-* Constraints should be given a custom name excepting `UNIQUE`, `PRIMARY KEY`
-  and `FOREIGN KEY` where the database vendor will generally supply sufficiently
-  intelligible names automatically.
-
-##### Layout and order
-
-* Specify the primary key first right after the `CREATE TABLE` statement.
-* Constraints should be defined directly beneath the column they correspond to.
-  Indent the constraint so that it aligns to the right of the column name.
-* If it is a multi-column constraint then consider putting it as close to both
-  column definitions as possible and where this is difficult as a last resort
-  include them at the end of the `CREATE TABLE` definition.
-* If it is a table level constraint that applies to the entire table then it
-  should also appear at the end.
-* Use alphabetical order where `ON DELETE` comes before `ON UPDATE`.
-* If it make senses to do so align each aspect of the query on the same character
-  position. For example all `NOT NULL` definitions could start at the same
-  character position. This is not hard and fast, but it certainly makes the code
-  much easier to scan and read.
-
-##### Validation
-
-* Use `LIKE` and `SIMILAR TO` constraints to ensure the integrity of strings
-  where the format is known.
-* Where the ultimate range of a numerical value is known it must be written as a
-  range `CHECK()` to prevent incorrect values entering the database or the silent
-  truncation of data too large to fit the column definition. In the least it
-  should check that the value is greater than zero in most cases.
-* `CHECK()` constraints should be kept in separate clauses to ease debugging.
-
-##### Example
-
-```sql
-CREATE TABLE staff (
-    PRIMARY KEY (staff_num),
-    staff_num      INT(5)       NOT NULL,
-    first_name     VARCHAR(100) NOT NULL,
-    pens_in_drawer INT(2)       NOT NULL,
-                   CONSTRAINT pens_in_drawer_range
-                   CHECK(pens_in_drawer >= 1 AND pens_in_drawer < 100)
-)
-```
-
-### Designs to avoid
-
-* Object oriented design principles do not effectively translate to relational
-  database designs—avoid this pitfall.
-* Placing the value in one column and the units in another column. The column
-  should make the units self evident to prevent the requirement to combine
-  columns again later in the application. Use `CHECK()` to ensure valid data is
-  inserted into the column.
-* [EAV (Entity Attribute Value)][eav] tables—use a specialist product intended for
-  handling such schema-less data instead.
-* Splitting up data that should be in one table across many because of arbitrary
-  concerns such as time-based archiving or location in a multi-national
-  organisation. Later queries must then work across multiple tables with `UNION`
-  rather than just simply querying one table.
-
-
-## Appendix
-
-### Reserved keyword reference
-
-* See [https://www.sqlstyle.guide][here]
+* [Reserved keywords](https://www.sqlstyle.guide)
