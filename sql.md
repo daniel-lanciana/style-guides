@@ -147,7 +147,7 @@ sequential UUID (e.g. with `newsequentialid()`) at the cost reduced randomness.
 ### Primary keys
 
 Tables must have at least one key to be complete and useful—as it will effect performance 
-and data integrity. A primary key (or combined composite key) needs to be:
+and referntial integrity. A primary key (or combined composite key) needs to be:
 
 * unique
 * immutable (will never change)
@@ -158,7 +158,7 @@ naturally-ocurring primary key.
 
 ### Constraints
 
-Constraints help ensure data integrity and define relationships between tables. 
+Constraints help ensure referential integrity and define relationships between tables. 
 
 Use of `FOREIGN KEY` should always be used when referencing values from another table. Use 
 of `UNIQUE` should always be used when one-or-more fields are not permitted to be
