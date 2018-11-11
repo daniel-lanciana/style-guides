@@ -1,5 +1,34 @@
 # SQL Style Guide
 
+- [Overview](#overview)
+- [General](#general)
+	- [Do](#do)
+	- [Avoid](#avoid)
+- [Naming conventions](#naming-conventions)
+	- [General](#general-1)
+	- [Tables](#tables)
+	- [Columns](#columns)
+	- [Aliasing or correlations](#aliasing-or-correlations)
+	- [Uniform suffixes](#uniform-suffixes)
+- [Schema design](#schema-design)
+	- [Data types](#data-types)
+	- [Default values](#default-values)
+	- [UUIDs (Universally Unique Identifiers)](#uuids-universally-unique-identifiers)
+	- [Primary keys](#primary-keys)
+	- [Constraints](#constraints)
+	- [Indexes](#indexes)
+	- [Validation](#validation)
+	- [Create syntax](#create-syntax)
+	- [Designs to avoid](#designs-to-avoid)
+- [Query syntax](#query-syntax)
+	- [Reserved words](#reserved-words)
+	- [Spacing](#spacing)
+	- [Joins](#joins)
+	- [Parentheses](#parentheses)
+	- [Preferred formalisms](#preferred-formalisms)
+- [Integration with the logic layer](#integration-with-the-logic-layer)
+- [References](#references)
+
 ## Overview
 
 Defines the set of standards pertaining to relational database design and
