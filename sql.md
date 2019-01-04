@@ -104,7 +104,7 @@ Strive for consistent, idiomatic naming that integrates well with established OR
 
 * Always use the singular name.
 * Surrogate primary key fields should be named `id`.  
-* Foreign key fields should be `singularized_table_name_id` (such as `item_id`).  
+* Foreign key names should follow `table_name_field_name_fkey` (such as `table_field_id_fkey`).  
 * Do not add a column with the same name as its table and vice versa.
 
 ### Aliasing or correlations
